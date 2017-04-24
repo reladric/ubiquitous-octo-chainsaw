@@ -1,8 +1,10 @@
+library(zoo)
 library(ggplot2)
+library(pracma)
 energy_df <-
   read.csv(file = "energydata_complete.csv", stringsAsFactors = FALSE)
 energy_df$date <- as.Date(energy_df$date)
-selected_energy_df <- energy_df[43:nrow(energy_df), ]
+selected_energy_df <- energy_df[43:nrow(energy_df),]
 
 
 ws = 144
@@ -20,6 +22,7 @@ plot(smoothed_selected_appliances, type = "l")
 #
 # lines(filter(energy_df[43:nrow(energy_df), ]$T1, rep(1 / ws, ws)), col="red")
 
+summary(selected_energy_df)
 
 ws = 144
 smoothed_kitchen_temp <-
@@ -36,16 +39,34 @@ ws = 144
 smoothed_lroom_temp <-
   filter(selected_energy_df$T2, rep(1 / ws, ws))
 plot(smoothed_lroom_temp, type = "l")
-X <- cbind(smoothed_kitchen_temp[72:(length(smoothed_selected_appliances) -
-                                       72)],          smoothed_kitchen_hum[72:(length(smoothed_selected_appliances) - 72)])
+X <-
+  cbind(smoothed_kitchen_temp[72:(length(smoothed_selected_appliances) -
+                                    72)],          smoothed_kitchen_hum[72:(length(smoothed_selected_appliances) - 72)])
 
-zooed_X<-zoo(X)
-lagged_x<-lag(zooed_X,k = 10, na.pad = TRUE)
+zooed_X <- zoo(X)
+lagged_x <- lag(zooed_X, k = 10, na.pad = TRUE)
 armam <-
-  arima(
-    smoothed_selected_appliances [72:(length(smoothed_selected_appliances) -
-                                        82)] ,
-    order = c(10, 0, 10),
-    xreg =lagged_x[1:(nrow(lagged_x)-10),]
-  )
-    
+  arima(smoothed_selected_appliances [72:(length(smoothed_selected_appliances) -
+                                            82)] ,
+        order = c(10, 0, 10),
+        xreg = lagged_x[1:(nrow(lagged_x) - 10), ])
+
+selected_energy_df$Appliances <-
+  scale(selected_energy_df$Appliances,
+        center = TRUE,
+        scale = TRUE)
+
+selected_energy_df$T_out <-
+  scale(selected_energy_df$T_out,
+        center = TRUE,
+        scale = TRUE)
+
+selected_energy_df$RH_out <-
+  scale(selected_energy_df$RH_out,
+        center = TRUE,
+        scale = TRUE)
+colors <- c("temp" = "red","humidity" = "green",  "dependant variable - Appliance" = "blue")
+ggplot(data = selected_energy_df, aes(x = date))  + geom_smooth(aes(y = Appliances, col =
+                                                                      "dependant variable - Appliance")) + geom_smooth(aes(y = T_out, col =
+                                                                                                                             "temp")) + geom_smooth(aes(y = RH_out, col =
+                                                                                                                                                          "humidity")) + scale_color_manual(values = colors)
